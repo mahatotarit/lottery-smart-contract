@@ -2,57 +2,60 @@
 pragma solidity ^0.8.7;
 
 // Lottery Contract 
-contract lottery {
+contract Lottery {
   
-    //Golbal veriables 
-     address public manger ;  
-     address payable[] public Lotterybuyers ;  
-     
-    constructor(){
-        manger = msg.sender;
+    // Global variables 
+    address public manager;  
+    address payable[] public lotteryBuyers;  
+
+    constructor() {
+        manager = msg.sender;
     }
 
     modifier onlyContractOwner() {
-        require(msg.sender == manger, "Only contractOwner");
+        require(msg.sender == manager, "Only contract owner");
         _;
     }
 
-    //receive payable function for deposits 
-    receive() payable external{
-         require(msg.value >= 1 ether,'Not Minimum Value');
-         require(msg.sender!= manger , 'Manger cant buy Tick');
-         Lotterybuyers.push(payable(msg.sender));
+    // Receive payable function for deposits 
+    receive() payable external {
+        require(msg.value >= 1 ether, 'Not minimum value');
+        require(msg.sender != manager, 'Manager cannot buy ticket');
+        lotteryBuyers.push(payable(msg.sender));
     }
 
-    // showing balance
-    function getblance() view public returns(uint){
-        require(msg.sender == manger,'Not manger');
+    // Showing contract balance
+    function getBalance() view public returns(uint) {
+        require(msg.sender == manager, 'Not manager');
         return address(this).balance;
     }
 
-    // genreating Random Winner
-    function random() public view returns(uint){
-       return uint(keccak256(abi.encodePacked(block.difficulty,block.timestamp,Lotterybuyers.length)));
+    // Generating random number
+    function generateRandom() private view returns(uint) {
+        return uint(keccak256(abi.encodePacked(block.difficulty, block.timestamp, lotteryBuyers.length)));
     }
 
-    //Return Lotterybuyers All
-    function TotalNumberOfBuyer() public view returns(uint){
-        return Lotterybuyers.length;
+    // Get total number of buyers
+    function getTotalNumberOfBuyers() public view returns(uint) {
+        return lotteryBuyers.length;
     }
 
-    // Winner selecting 
-    function Winer() external onlyContractOwner{
-        require(Lotterybuyers.length>=3);
-        address payable Winner ;
-        uint r = random();
-        uint index = r % Lotterybuyers.length;
-        Winner = Lotterybuyers[index];
-        Winner.transfer(getblance());
+    // Select winner
+    function selectWinner() external onlyContractOwner {
+        require(lotteryBuyers.length >= 3, "At least 3 participants required");
+
+        uint randomIndex = generateRandom() % lotteryBuyers.length;
+        address payable winner = lotteryBuyers[randomIndex];
+        
+        // Transfer balance to the winner
+        winner.transfer(getBalance());
+        
+        // Clear lottery buyers array
+        delete lotteryBuyers;
     }
 
-    // Transfer to Winner and clear 
-    function ReloadLottery() external onlyContractOwner{
-        Lotterybuyers = new address payable[](0);
+    // Transfer balance to the winner and clear the participants list 
+    function reloadLottery() external onlyContractOwner {
+        delete lotteryBuyers;
     }
-
 }
